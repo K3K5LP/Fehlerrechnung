@@ -36,8 +36,8 @@ def search_index(data, target):
         if i[0] == target:
             return i
 
-def plot(data):
-    x_values, RelHäuf, poisson = data
+def plot(_data):
+    x_values, RelHäuf, poisson = _data
     #Values = [[0, 11], [1, 80], [2, 74], [3, 71], [4, 48], [5, 28], [6, 13], [7, 9], [8, 2]]
     #RelHäuf = [1,2,3,4,5,6,7,8,9]
     #poisson = [1,2,3,4,5,6,7,8,9]
@@ -64,10 +64,9 @@ def plot(data):
     plt.show()
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    data = [[0, 11], [1, 80], [2, 74], [3, 71], [4, 48], [5, 28], [6, 13], [7, 9], [8, 2]]
-    plot(calculate(data))
-
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    data = [[0, 23], [1, 83], [2, 71], [3, 74], [4, 45], [5, 19], [6, 16], [7, 3], [8, 2]]
+    calc = calculate(data)
+    for i in calc:
+        print(i)
+    plot(calc)
