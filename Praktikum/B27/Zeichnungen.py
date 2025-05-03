@@ -1,0 +1,152 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.optimize import curve_fit
+
+
+class Plotter:
+    def __init__(self, Table):
+        # Neue Messdaten (V, V-Fehler, mA, mA-Fehler)
+        Table3 = np.array([
+            [0.004, 0.000500399840127872, 0.0, 0.002],
+            [0.1001, 0.000500399840127872, 0.0, 0.002],
+            [0.201, 0.000600333240792145, 0.0, 0.002],
+            [0.30159, 0.000600333240792145, 0.001, 0.002],
+            [0.40034, 0.000600333240792145, 0.016, 0.002],
+            [0.49901, 0.000600333240792145, 0.209, 0.002],
+            [0.58576, 0.000600333240792145, 1.394, 0.002],
+            [0.6487, 0.000701141925718324, 5.18, 0.004],
+            [0.68398, 0.000703491293478462, 10.602, 0.007]
+        ])
+
+        Table1 = np.array([
+            [0.0087,  0.000500399840127872, 0.0,     0.002],
+            [0.10688, 0.000500399840127872, 0.022,   0.002],
+            [0.19873, 0.000600333240792145, 0.187,   0.002],
+            [0.29447, 0.000600333240792145, 0.613,   0.002],
+            [0.38771, 0.000600333240792145, 1.229,   0.002],
+            [0.48001, 0.000600333240792145, 1.979,   0.002],
+            [0.57167, 0.000700642562224134, 2.833,   0.003],
+            [0.66302, 0.000700642562224134, 3.768,   0.003],
+            [0.75334, 0.000701141925718324, 4.766,   0.004],
+            [0.84197, 0.000701141925718324, 5.803,   0.004],
+            [0.93181, 0.00080156097709407,  6.909,   0.005],
+            [1.01945, 0.000802246844805263, 8.035,   0.006],
+            [1.10871, 0.000802246844805263, 9.229,   0.006],
+            [1.19626, 0.000803056660516554, 10.444,  0.007],
+        ])
+
+        Table5 = np.array([
+            [0.0088,  0.000500399840127872, 0.0,    0.002],
+            [0.1,     0.000500399840127872, 0.0,    0.002],
+            [0.2009,  0.000600333240792145, 0.0,    0.002],
+            [0.3016,  0.000600333240792145, 0.0,    0.002],
+            [0.399,   0.000600333240792145, 0.0,    0.002],
+            [0.49907, 0.000600333240792145, 0.003,  0.002],
+            [0.59855, 0.000600333240792145, 0.065,  0.002],
+            [0.69204, 0.000700285656000464, 0.886,  0.002],
+            [0.75662, 0.000701141925718324, 4.318,  0.004],
+            [0.79488, 0.000703491293478462, 10.472, 0.007]
+        ])
+
+        Table8 = np.array([
+            [0.0041,  0.000500399840127872, 0.0,    0.002],
+            [1.0,     0.000800249960949702, 0.0,    0.002],
+            [1.50049, 0.000900222194794152, 0.001,  0.002],
+            [1.60052, 0.000900222194794152, 0.008,  0.002],
+            [1.6992,  0.000900222194794152, 0.08,   0.002],
+            [1.74818, 0.000900222194794152, 0.232,  0.002],
+            [1.79511, 0.001000199980004,    0.619,  0.002],
+            [1.83543, 0.001000199980004,    1.507,  0.002],
+            [1.8684,  0.00100044989879554,  3.22,   0.003],
+            [1.8936,  0.00100079968025574,  5.64,   0.004],
+            [1.91353, 0.00100179838290946,  8.647,  0.006]
+        ])
+        Table2 = np.array([
+            [0.004,    0.000500399840127872, 0.000,  0.002],
+            [0.99958,  0.000700285656000464, 0.002,  0.002],
+            [1.99918,  0.001000199980004,    0.002,  0.002],
+            [3.00337,  0.0013001538370516,   0.003,  0.002],
+            [4.00256,  0.00150013332740793,  0.004,  0.002],
+            [5.00025,  0.00180011110768197,  0.005,  0.002],
+            [6.00134,  0.00200009999750012,  0.006,  0.002],
+            [7.00143,  0.00230008695487801,  0.007,  0.002],
+            [7.99942,  0.00250007999872004,  0.008,  0.002],
+            [9.00181,  0.00280007142766037,  0.009,  0.002],
+            [10.0019,  0.00300006666592594,  0.010,  0.002],
+            [10.99988, 0.00800002499996094,  0.012,  0.002],
+            [12.00187, 0.00800002499996094,  0.013,  0.002],
+            [12.99986, 0.00800002499996094,  0.014,  0.002],
+            [13.99884, 0.00800002499996094,  0.016,  0.002],
+            [15.00283, 0.00900002222219479,  0.017,  0.002],
+            [8.00225,  0.00250007999872004,  0.015,  0.002]
+        ])
+        Table4 = []
+        Table6 = []
+        Table7 = []
+
+        data_sets = [[], Table1, Table2, Table3, Table4, Table5, Table6, Table7, Table8]
+
+        self.data = data_sets[Table]
+
+        # Extrahieren der Spannung (volt) und Stromwerte (current)
+        self.volt = self.data[:, 0]
+        self.volt_err = self.data[:, 1]
+        self.current = self.data[:, 2]
+        self.current_err = self.data[:, 3]
+
+
+    # Exponentielle Funktion: y = A * exp(B * x)
+
+
+    def _exp_shifted(self, x, A, B):
+        return A * np.exp(B * x)
+
+    def plot(self, start=0, end=30):
+        # Fit der exponentiellen Funktion
+        initial_guess = [0, 10]
+
+        [params, _] = curve_fit(self._exp_shifted, self.volt, self.current, sigma=self.current_err, absolute_sigma=True, p0=initial_guess)
+
+        print(params)
+
+        # Fit-Kurve vorbereiten
+        volt_fit = np.linspace(min(self.volt)-0.05, max(self.volt)+0.05, 500)
+        current_fit = self._exp_shifted(volt_fit, *params)
+
+        # Plot
+        plt.plot(volt_fit, current_fit, 'r-', label=f'Exponentieller Fit: A={params[0]:.2f}, B={params[1]:.2f}')
+        plt.errorbar(self.volt, self.current, yerr=self.current_err, fmt='x', color='black', label='Messdaten', capsize=3)
+
+        mask_linear = (self.volt >= start) & (self.volt <= end)
+        temp = np.polyfit(self.volt[mask_linear], self.current[mask_linear], 1, full=True)
+        slope, intercept = temp[0]
+
+        x_intercept = -intercept / slope
+
+        # Fehler der Steigung und des y-Achsenabschnitts
+        slope_err = np.sqrt(np.diag(np.cov(self.volt, self.current)))[0]
+        intercept_err = np.sqrt(np.diag(np.cov(self.volt, self.current)))[1]
+
+        # Fehler des Schnittpunkts
+        sigma_x_intercept = np.sqrt((intercept / slope ** 2 * slope_err) ** 2 + (1 / slope * intercept_err) ** 2)
+
+        # Ausgabe der Ergebnisse
+        print(f"Schnittpunkt mit der x-Achse: {x_intercept:.4f} V")
+        print(f"Fehler des Schnittpunkts: {sigma_x_intercept:.4f} V")
+        linear_fit = slope * volt_fit + intercept
+        # entfernen negativer Werte
+        #linear_fit = np.where(linear_fit > 0, linear_fit, np.nan)
+        # Plot der Ausgleichsgeraden im linearen Bereich
+        plt.plot(volt_fit, linear_fit, '-', label=f'Linear-Fit: y = {slope:.2f}x + {intercept:.2f}')
+
+        # Achsen und Layout
+        plt.xlabel('Spannung (V)')
+        plt.ylabel('Strom (mA)')
+        plt.ylim(bottom=0, top=self.current[-1]*1.2)
+        plt.xlim(left=0, right=self.volt[-1]*1.05)
+        plt.tick_params(axis='both', which="both", direction='in', top=True, right=True)
+        plt.minorticks_on()
+        plt.title('Exponentieller Fit mit Messdaten')
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
