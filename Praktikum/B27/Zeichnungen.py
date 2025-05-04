@@ -1,152 +1,242 @@
+import data_file
+import datetime
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 import numpy as np
-from scipy.optimize import curve_fit
+import scipy as sp
+
+
+
+# Exponentielle Funktion: y = A * exp(B * x)
+def _exp_function(x, a, b):
+    return a * np.exp(b * x)
+
+def _affine_function(x,m,b):
+    return m*x + b
+
+def param_string(parameter, accuracy = 2):
+    if parameter < 0:
+        return str(f"-{abs(parameter):.{accuracy}e}")
+    else:
+        return str(f"+{parameter:.{accuracy}e}")
 
 
 class Plotter:
-    def __init__(self, Table):
-        # Neue Messdaten (V, V-Fehler, mA, mA-Fehler)
-        Table3 = np.array([
-            [0.004, 0.000500399840127872, 0.0, 0.002],
-            [0.1001, 0.000500399840127872, 0.0, 0.002],
-            [0.201, 0.000600333240792145, 0.0, 0.002],
-            [0.30159, 0.000600333240792145, 0.001, 0.002],
-            [0.40034, 0.000600333240792145, 0.016, 0.002],
-            [0.49901, 0.000600333240792145, 0.209, 0.002],
-            [0.58576, 0.000600333240792145, 1.394, 0.002],
-            [0.6487, 0.000701141925718324, 5.18, 0.004],
-            [0.68398, 0.000703491293478462, 10.602, 0.007]
-        ])
+    def __init__(self, table, number, y_label ,title="", save = False):
 
-        Table1 = np.array([
-            [0.0087,  0.000500399840127872, 0.0,     0.002],
-            [0.10688, 0.000500399840127872, 0.022,   0.002],
-            [0.19873, 0.000600333240792145, 0.187,   0.002],
-            [0.29447, 0.000600333240792145, 0.613,   0.002],
-            [0.38771, 0.000600333240792145, 1.229,   0.002],
-            [0.48001, 0.000600333240792145, 1.979,   0.002],
-            [0.57167, 0.000700642562224134, 2.833,   0.003],
-            [0.66302, 0.000700642562224134, 3.768,   0.003],
-            [0.75334, 0.000701141925718324, 4.766,   0.004],
-            [0.84197, 0.000701141925718324, 5.803,   0.004],
-            [0.93181, 0.00080156097709407,  6.909,   0.005],
-            [1.01945, 0.000802246844805263, 8.035,   0.006],
-            [1.10871, 0.000802246844805263, 9.229,   0.006],
-            [1.19626, 0.000803056660516554, 10.444,  0.007],
-        ])
+        self.data = data_file.data_set[table]
 
-        Table5 = np.array([
-            [0.0088,  0.000500399840127872, 0.0,    0.002],
-            [0.1,     0.000500399840127872, 0.0,    0.002],
-            [0.2009,  0.000600333240792145, 0.0,    0.002],
-            [0.3016,  0.000600333240792145, 0.0,    0.002],
-            [0.399,   0.000600333240792145, 0.0,    0.002],
-            [0.49907, 0.000600333240792145, 0.003,  0.002],
-            [0.59855, 0.000600333240792145, 0.065,  0.002],
-            [0.69204, 0.000700285656000464, 0.886,  0.002],
-            [0.75662, 0.000701141925718324, 4.318,  0.004],
-            [0.79488, 0.000703491293478462, 10.472, 0.007]
-        ])
-
-        Table8 = np.array([
-            [0.0041,  0.000500399840127872, 0.0,    0.002],
-            [1.0,     0.000800249960949702, 0.0,    0.002],
-            [1.50049, 0.000900222194794152, 0.001,  0.002],
-            [1.60052, 0.000900222194794152, 0.008,  0.002],
-            [1.6992,  0.000900222194794152, 0.08,   0.002],
-            [1.74818, 0.000900222194794152, 0.232,  0.002],
-            [1.79511, 0.001000199980004,    0.619,  0.002],
-            [1.83543, 0.001000199980004,    1.507,  0.002],
-            [1.8684,  0.00100044989879554,  3.22,   0.003],
-            [1.8936,  0.00100079968025574,  5.64,   0.004],
-            [1.91353, 0.00100179838290946,  8.647,  0.006]
-        ])
-        Table2 = np.array([
-            [0.004,    0.000500399840127872, 0.000,  0.002],
-            [0.99958,  0.000700285656000464, 0.002,  0.002],
-            [1.99918,  0.001000199980004,    0.002,  0.002],
-            [3.00337,  0.0013001538370516,   0.003,  0.002],
-            [4.00256,  0.00150013332740793,  0.004,  0.002],
-            [5.00025,  0.00180011110768197,  0.005,  0.002],
-            [6.00134,  0.00200009999750012,  0.006,  0.002],
-            [7.00143,  0.00230008695487801,  0.007,  0.002],
-            [7.99942,  0.00250007999872004,  0.008,  0.002],
-            [9.00181,  0.00280007142766037,  0.009,  0.002],
-            [10.0019,  0.00300006666592594,  0.010,  0.002],
-            [10.99988, 0.00800002499996094,  0.012,  0.002],
-            [12.00187, 0.00800002499996094,  0.013,  0.002],
-            [12.99986, 0.00800002499996094,  0.014,  0.002],
-            [13.99884, 0.00800002499996094,  0.016,  0.002],
-            [15.00283, 0.00900002222219479,  0.017,  0.002],
-            [8.00225,  0.00250007999872004,  0.015,  0.002]
-        ])
-        Table4 = []
-        Table6 = []
-        Table7 = []
-
-        data_sets = [[], Table1, Table2, Table3, Table4, Table5, Table6, Table7, Table8]
-
-        self.data = data_sets[Table]
+        self.title = title
+        self.number = f"[Graph {number}]"
+        self.save = save
 
         # Extrahieren der Spannung (volt) und Stromwerte (current)
         self.volt = self.data[:, 0]
         self.volt_err = self.data[:, 1]
         self.current = self.data[:, 2]
         self.current_err = self.data[:, 3]
+        self.volt_fit = np.linspace(min(self.volt) - 0.05, max(self.volt) * 1.2, 500)
+        self.y_label = y_label
 
 
-    # Exponentielle Funktion: y = A * exp(B * x)
+    def trim_data(self, size_min):
+        volt = np.array([])
+        current = np.array([])
+        volt_err = np.array([])
+        current_err = np.array([])
+        for x in range(len(self.volt)):
+            if size_min <= self.volt[x]:
+                volt = np.append(volt, self.volt[x])
+                current = np.append(current, self.current[x])
+                volt_err = np.append(volt_err, self.volt_err[x])
+                current_err = np.append(current_err, self.current_err[x])
+        return volt, current, volt_err, current_err
+
+    def lin_reg(self, size=None):
+        if size is None:
+            size = [0, 30]
+        volt = []
+        current = []
+        volt_err = []
+        current_err = []
+        for x in range(len(self.volt)):
+            if size[0] <= self.volt[x] <= size[1]:
+                volt.append(self.volt[x])
+                current.append(self.current[x])
+                volt_err.append(self.volt_err[x])
+                current_err.append(self.current_err[x])
+
+        data = sp.odr.RealData(volt, current, volt_err, current_err)
+        output = sp.odr.ODR(data, sp.odr.polynomial(1)).run()
+        lin_fit = np.poly1d(output.beta[::-1])
+        current_fit = lin_fit(self.volt_fit)
+        return current_fit
+
+    def lin_model(self, size=None):
+        if size is None:
+            volt, current, volt_err, current_err = self.volt, self.current, self.volt_err, self.current_err
+        else:
+            volt, current, volt_err, current_err = self.trim_data(size)
+        [opt, cov] = sp.optimize.curve_fit(_affine_function, volt, current, sigma = current_err, absolute_sigma=True)
+        m,b = opt
+        m_err, b_err = np.sqrt(np.diag(cov))
+
+        current_fit = _affine_function(self.volt_fit, m, b)
 
 
-    def _exp_shifted(self, x, A, B):
-        return A * np.exp(B * x)
 
-    def plot(self, start=0, end=30):
-        # Fit der exponentiellen Funktion
-        initial_guess = [0, 10]
 
-        [params, _] = curve_fit(self._exp_shifted, self.volt, self.current, sigma=self.current_err, absolute_sigma=True, p0=initial_guess)
 
-        print(params)
+        return current_fit, [m,b,m_err,b_err]
 
+    def plot_voltage(self):
+        volt, current, volt_err, current_err = self.trim_data(0.3)
+        resistance = volt / current
+        res_err = np.sqrt((volt_err/volt)**2+(current_err/current)**2)*resistance
+
+        delta = []
+        delta_err = []
+        new_volt = []
+        for i in range(1,len(volt)-1):
+            res_now = (float(volt[i-1])-float(volt[i+1]))/(float(current[i-1])-float(current[i+1]))
+            delta.append(res_now)
+            new_volt.append(volt[i])
+
+            delta_err.append(np.sqrt(
+                (np.sqrt(float(volt_err[i-1])**2+float(volt_err[i+1])**2)/(float(volt[i-1])-float(volt[i+1])))**2+
+                (np.sqrt(float(current_err[i-1])**2+float(current_err[i+1])**2)/(float(current[i-1])-float(current[i+1])))**2)
+                *res_now)
+
+        spline_res = sp.interpolate.CubicSpline(volt, resistance)
+        resistance_fit = spline_res(self.volt_fit)
+        label_res = f'Fit mit kubischen Splines des Widerstands'
+        plt.plot(self.volt_fit, resistance_fit, '-', label=label_res)
+        plt.errorbar(volt, resistance, yerr=res_err, fmt='x', color='black', capsize=3)
+
+        spline_delta = sp.interpolate.CubicSpline(new_volt, delta)
+        delta_fit = spline_delta(self.volt_fit)
+        label_delta = f'Fit mit kubischen Splines des differentiellen Widerstands'
+
+        plt.plot(self.volt_fit, delta_fit, '-', label=label_delta)
+        plt.errorbar(new_volt, delta, yerr=delta_err, fmt='x', color='black', capsize=3)
+
+
+
+        self.finish_plot(max(volt)*1.1, max(resistance)*1.05, x_beginning = 0.2)
+
+    def plot(self,linear, start, fit):
+        current_fit = []
+        label = ""
         # Fit-Kurve vorbereiten
-        volt_fit = np.linspace(min(self.volt)-0.05, max(self.volt)+0.05, 500)
-        current_fit = self._exp_shifted(volt_fit, *params)
+
+        if fit == "cube":
+            spline = sp.interpolate.CubicSpline(self.volt, self.current)
+            current_fit= spline(self.volt_fit)
+            label = f'Fit mit kubischen Splines'
+
+        elif fit == "exp":
+            # Fit der exponentiellen Funktion
+            initial_guess = [0, 10]
+            [params, _] = sp.optimize.curve_fit(_exp_function, self.volt, self.current, sigma=self.current_err, absolute_sigma=True,
+                                    p0=initial_guess)
+            #print(params)
+            current_fit = _exp_function(self.volt_fit, *params)
+
+            label = f'Exponentieller Fit: A={params[0]:.4e}, B={params[1]:.2f}'
+
+        elif fit == "lin":
+
+            current_fit,[m,b,m_err,b_err] = self.lin_model()
+            if m != 0:
+                pot_m = int(np.log10(abs(m))-1)
+            else:
+                pot_m = 0
+            if b != 0:
+                pot_b = int(np.log10(abs(b))-1)
+            else:
+                pot_b = 0
+
+            """if pot_m != 0:
+                a = f"e{pot_m}"
+            else:
+                a=""
+            if pot_b != 0:
+                c = f"e{pot_b}"
+            else:
+                c=""
+
+            label = f'Linearer Fit:  ({m/(10**pot_m):.2f}±{m_err/(10**pot_m):.2f}){a}*x + ({b/(10**pot_b):.2f}±{b_err/(10**pot_b):.2f}){c}'"""
+
+            pot = max(pot_m, pot_b)
+
+            if pot != 0:
+                a = f"e{pot}"
+            else:
+                a = ""
+
+            label = f'Linearer Fit:  ({m / (10 ** pot):.2f}±{m_err / (10 ** pot):.2f}){a}*x + ({b / (10 ** pot):.2f}±{b_err / (10 ** pot):.2f}){a}'
 
         # Plot
-        plt.plot(volt_fit, current_fit, 'r-', label=f'Exponentieller Fit: A={params[0]:.2f}, B={params[1]:.2f}')
+        plt.plot(self.volt_fit, current_fit, 'r-', label=label)
         plt.errorbar(self.volt, self.current, yerr=self.current_err, fmt='x', color='black', label='Messdaten', capsize=3)
 
-        mask_linear = (self.volt >= start) & (self.volt <= end)
-        temp = np.polyfit(self.volt[mask_linear], self.current[mask_linear], 1, full=True)
-        slope, intercept = temp[0]
+        if linear:
+            """mask_linear = (self.volt >= start) & (self.volt <= end)
+            slope, intercept = np.polyfit(self.volt[mask_linear], self.current[mask_linear], 1, full=True)[0]
 
-        x_intercept = -intercept / slope
+            x_intercept = -intercept / slope
 
-        # Fehler der Steigung und des y-Achsenabschnitts
-        slope_err = np.sqrt(np.diag(np.cov(self.volt, self.current)))[0]
-        intercept_err = np.sqrt(np.diag(np.cov(self.volt, self.current)))[1]
+            # Fehler der Steigung und des y-Achsenabschnitts
+            slope_err = np.sqrt(np.diag(np.cov(self.volt, self.current)))[0]
+            intercept_err = np.sqrt(np.diag(np.cov(self.volt, self.current)))[1]
 
-        # Fehler des Schnittpunkts
-        sigma_x_intercept = np.sqrt((intercept / slope ** 2 * slope_err) ** 2 + (1 / slope * intercept_err) ** 2)
+            # Fehler des Schnittpunkts
+            sigma_x_intercept = np.sqrt((intercept / slope ** 2 * slope_err) ** 2 + (1 / slope * intercept_err) ** 2)
+            """
+            # Ausgabe der Ergebnisse
+            linear_fit, [slope,intercept, slope_err, intercept_err] = self.lin_model(start)
+            x_intercept = -intercept / slope
+            sigma_x_intercept = np.sqrt((intercept_err / slope) ** 2 + ((intercept * slope_err) / slope ** 2) ** 2)
 
-        # Ausgabe der Ergebnisse
-        print(f"Schnittpunkt mit der x-Achse: {x_intercept:.4f} V")
-        print(f"Fehler des Schnittpunkts: {sigma_x_intercept:.4f} V")
-        linear_fit = slope * volt_fit + intercept
-        # entfernen negativer Werte
-        #linear_fit = np.where(linear_fit > 0, linear_fit, np.nan)
-        # Plot der Ausgleichsgeraden im linearen Bereich
-        plt.plot(volt_fit, linear_fit, '-', label=f'Linear-Fit: y = {slope:.2f}x + {intercept:.2f}')
 
+            #print(f"Schnittpunkt mit der x-Achse: {x_intercept:.4f} V")
+            #print(f"Fehler des Schnittpunkts: {sigma_x_intercept:.4f} V")
+
+            # Plot der Ausgleichsgeraden im linearen Bereich
+            plt.plot(self.volt_fit, linear_fit, '-', label=f'Linearer Fit:  {param_string(slope,4)}x {param_string(intercept,4)}')
+
+            plt.errorbar(x_intercept, 0, xerr=sigma_x_intercept, fmt='.', color='black', label=f"Kniespannung: {param_string(x_intercept,4)} ± {sigma_x_intercept:.4f}",
+                         capsize=3)
+
+        if self.current[-1] == 0:
+            height = 0.02
+            neg_height = -0.02
+        else:
+            height = self.current[-1]*1.2
+            neg_height = 0
+        self.finish_plot( self.volt[-1]*1.05, height, y_beginning = neg_height)
+
+
+    def finish_plot(self, x_lim, y_lim, x_beginning = 0.0, y_beginning = 0.0):
         # Achsen und Layout
         plt.xlabel('Spannung (V)')
-        plt.ylabel('Strom (mA)')
-        plt.ylim(bottom=0, top=self.current[-1]*1.2)
-        plt.xlim(left=0, right=self.volt[-1]*1.05)
+        plt.ylabel(self.y_label)
+        plt.ylim(bottom=y_beginning, top=y_lim)
+        plt.xlim(left=x_beginning, right=x_lim)
         plt.tick_params(axis='both', which="both", direction='in', top=True, right=True)
-        plt.minorticks_on()
-        plt.title('Exponentieller Fit mit Messdaten')
+        #plt.minorticks_on()
+        plt.gca().xaxis.set_minor_locator(AutoMinorLocator(5))
+        plt.gca().yaxis.set_minor_locator(AutoMinorLocator(5))
+        plt.title(self.title, loc='left', y=1.04)
+        plt.figtext(1, 1.04, f"Marius Trabert, {datetime.datetime.now().strftime('%d. %B %Y')}", ha='right', va='top',
+                    transform=plt.gca().transAxes, fontsize=10)
+        plt.figtext(0.98,0.04,self.number, ha="right")
+        plt.get_current_fig_manager().set_window_title(self.number)
         plt.legend()
         plt.tight_layout()
-        plt.show()
+        if self.save:
+            plt.savefig(f"Graphs/{self.number}")
+            plt.close()
+        else:
+            plt.show()
+
