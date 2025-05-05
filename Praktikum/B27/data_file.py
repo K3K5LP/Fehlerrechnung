@@ -77,18 +77,30 @@ _table5 = np.array([
 ])
 _table6 = np.array([
     [0.0041, 0.000500399840127872, 0.0, 0.002],
-    [1.0, 0.000800249960949702, 0.0, 0.002],
-    [1.50049, 0.000900222194794152, 0.001, 0.002],
-    [1.60052, 0.000900222194794152, 0.008, 0.002],
-    [1.6992, 0.000900222194794152, 0.08, 0.002],
-    [1.74818, 0.000900222194794152, 0.232, 0.002],
-    [1.79511, 0.001000199980004, 0.619, 0.002],
-    [1.83543, 0.001000199980004, 1.507, 0.002],
-    [1.8684, 0.00100044989879554, 3.22, 0.003],
-    [1.8936, 0.00100079968025574, 5.64, 0.004],
-    [1.91353, 0.00100179838290946, 8.647, 0.006]
+    [4.9999, 0.00170011764298827, 0.0, 0.002],
+    [10.0013, 0.00300006666592594, 0.0, 0.002],
+    [11.849, 0.00800002499996094, 0.0, 0.002],
+    [11.89646, 0.00800002499996094, 0.354, 0.002],
+    [11.92572, 0.00800005624980225, 2.428, 0.003],
+    [11.9561, 0.00800009999937501, 4.49, 0.004],
+    [11.98564, 0.00800015624847415, 6.436, 0.005],
+    [12.01372, 0.00800022499683602, 8.628, 0.006],
+    [12.04323, 0.00800030624413841, 10.677, 0.007]
 ])
-_table7 = []
+_table7 = np.array([
+    [0.0038, 0.0005, 0.0038, 0.0005],
+    [3.0016, 0.0013, 3.0015, 0.0013],
+    [6.0007, 0.002, 6.0003, 0.002],
+    [9.0014, 0.0028, 9.0008, 0.0028],
+    [12.005, 0.008, 11.911, 0.008],
+    [15, 0.009, 11.91, 0.008],
+    [18, 0.01, 11.928, 0.008],
+    [21.002, 0.01, 11.945, 0.008],
+    [24, 0.011, 11.964, 0.008],
+    [27.002, 0.012, 11.982, 0.008],
+    [30, 0.013, 12, 0.008]
+
+])
 _table8 = np.array([
     [0.0041,  0.000500399840127872, 0.0,    0.002],
     [1.0,     0.000800249960949702, 0.0,    0.002],
@@ -105,30 +117,16 @@ _table8 = np.array([
 
 data_set = [[], _table1, _table2, _table3, _table4, _table5, _table6, _table7, _table8]
 
-names = [None,
-         "Durchlassrichtung GE-Diode",
-         "Sperrichtung GE-Diode",
-         "Widerstand GE-Diode",
-         "Durchlassrichtung Si-Diode",
-         "Sperrichtung Si-Diode",
-         "Durchlassrichtung Zenerdiode",
-         "Sperrrichtung Zenerdiode",
-         "Spannungsangleichung Zenerdiode",
-         "Durchlassrichtung LED"]
-
-table_number = [0,1,2,1,3,4,5,6,7,8]
-
-y_label_list = [None,None,None,"Widerstand GE-Diode (Ω)",None,None,None,None,None,None]
 
 plot_list = [
     [],
-    ["Durchlassrichtung GE-Diode",      "normal",  True,   0.6,    "cube", 1,  "Strom (mA)"],
-    ["Sperrichtung GE-Diode",           "normal",  False,  None,   "lin",  2,  "Strom (mA)"],
-    ["Widerstand GE-Diode",             "voltage", True,   None,   "exp",  1,  "Widerstand GE-Diode (Ω)"],
-    ["Durchlassrichtung Si-Diode",      "normal",  True,   0.6,    "exp",  3,  "Strom (mA)"],
-    ["Sperrichtung Si-Diode",           "normal",  False,  None,   "lin",  4,  "Strom (mA)"],
-    ["Durchlassrichtung Zenerdiode",    "normal",  True,   0.7,    "exp",  5,  "Strom (mA)"],
-    ["Sperrrichtung Zenerdiode",        "normal",  True,   1.8,    "exp",  6,  "Strom (mA)"],
-    ["Spannungsangleichung Zenerdiode", "normal",  True,   0.7,    "exp",  7,  "Strom (mA)"],
-    ["Durchlassrichtung LED",           "normal",  True,   1.84,   "exp",  8,  "Strom (mA)"],
+    ["Durchlassrichtung GE-Diode",      "normal",  True,   0.6,     3,      1,  "Strom (mA)", 0, True],
+    ["Sperrrichtung GE-Diode",          "normal",  False,  None,    "lin",  2,  "Strom (mA)", 0, True],
+    ["Widerstand GE-Diode",             "voltage", True,   None,    "exp",  1,  "Widerstand GE-Diode (Ω)", 0.2, True],
+    ["Durchlassrichtung Si-Diode",      "normal",  True,   0.6,     "exp",  3,  "Strom (mA)", 0.3, True],
+    ["Sperrrichtung Si-Diode",          "normal",  False,  None,    "lin",  4,  "Strom (mA)", 0, True],
+    ["Durchlassrichtung Zenerdiode",    "normal",  True,   0.7,     "exp",  5,  "Strom (mA)", 0.3, True],
+    ["Sperrrichtung Zenerdiode",        "normal",  True,   11.91,   "exp",  6,  "Strom (mA)", 9.7, True],
+    ["Spannungsangleichung Zenerdiode", "normal",  False,  None,    1,      7,  "Volt (V)", 0, False],
+    ["Durchlassrichtung LED",           "normal",  True,   1.84,    "exp",  8,  "Strom (mA)", 1.25, True],
 ]

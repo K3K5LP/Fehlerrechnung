@@ -6,38 +6,39 @@ import numpy as np
 import scipy as sp
 
 
-
 # Exponentielle Funktion: y = A * exp(B * x)
 def _exp_function(x, a, b):
     return a * np.exp(b * x)
 
-def _affine_function(x,m,b):
+
+def _affine_function(x, m, b):
     return m*x + b
 
-def param_string(parameter, accuracy = 2):
+
+def param_string(parameter, accuracy=2):
     if parameter < 0:
-        return str(f"-{abs(parameter):.{accuracy}e}")
+        return str(f"-{abs(parameter):.{accuracy}}")
     else:
-        return str(f"+{parameter:.{accuracy}e}")
+        return str(f"+{parameter:.{accuracy}}")
 
 
 class Plotter:
-    def __init__(self, table, number, y_label ,title="", save = False):
+    def __init__(self, table, number, y_label, title="", save=False, x_start=0):
 
         self.data = data_file.data_set[table]
 
         self.title = title
         self.number = f"[Graph {number}]"
         self.save = save
+        self.x_start = x_start
 
         # Extrahieren der Spannung (volt) und Stromwerte (current)
         self.volt = self.data[:, 0]
         self.volt_err = self.data[:, 1]
         self.current = self.data[:, 2]
         self.current_err = self.data[:, 3]
-        self.volt_fit = np.linspace(min(self.volt) - 0.05, max(self.volt) * 1.2, 500)
+        self.volt_fit = np.linspace(self.x_start, max(self.volt) * 1.2, 500)
         self.y_label = y_label
-
 
     def trim_data(self, size_min):
         volt = np.array([])
@@ -83,10 +84,6 @@ class Plotter:
 
         current_fit = _affine_function(self.volt_fit, m, b)
 
-
-
-
-
         return current_fit, [m,b,m_err,b_err]
 
     def plot_voltage(self):
@@ -117,32 +114,36 @@ class Plotter:
         delta_fit = spline_delta(self.volt_fit)
         label_delta = f'Fit mit kubischen Splines des differentiellen Widerstands'
 
-        plt.plot(self.volt_fit, delta_fit, '-', label=label_delta)
+        plt.plot(self.volt_fit, delta_fit, '--', label=label_delta)
         plt.errorbar(new_volt, delta, yerr=delta_err, fmt='x', color='black', capsize=3)
 
 
 
-        self.finish_plot(max(volt)*1.1, max(resistance)*1.05, x_beginning = 0.2)
+        self.finish_plot(max(volt)*1.1, max(resistance)*1.05)
 
-    def plot(self,linear, start, fit):
+    def plot(self, linear, start, fit, error_bar):
         current_fit = []
         label = ""
         # Fit-Kurve vorbereiten
 
-        if fit == "cube":
-            spline = sp.interpolate.CubicSpline(self.volt, self.current)
-            current_fit= spline(self.volt_fit)
-            label = f'Fit mit kubischen Splines'
+        if type(fit) is int:
+            #spline = sp.interpolate.CubicSpline(self.volt, self.current)
+            spline = sp.interpolate.make_interp_spline(self.volt, self.current, k=fit)
+            #spline = sp.interpolate.UnivariateSpline(self.volt, self.current, k=3)
+            current_fit = spline(self.volt_fit)
+            if fit == 1:
+                label = f'Fit mit linearen Splines'
+            else:
+                label = f'Fit mit kubischen Splines'
 
         elif fit == "exp":
             # Fit der exponentiellen Funktion
             initial_guess = [0, 10]
             [params, _] = sp.optimize.curve_fit(_exp_function, self.volt, self.current, sigma=self.current_err, absolute_sigma=True,
-                                    p0=initial_guess)
+                                    p0=initial_guess, maxfev = 100000)
             #print(params)
             current_fit = _exp_function(self.volt_fit, *params)
-
-            label = f'Exponentieller Fit: A={params[0]:.4e}, B={params[1]:.2f}'
+            label = f'Exponentieller Fit: {params[0]:.4e}(mA) * exp[{params[1]:.2f}(1/V) * x]'
 
         elif fit == "lin":
 
@@ -165,20 +166,24 @@ class Plotter:
             else:
                 c=""
 
-            label = f'Linearer Fit:  ({m/(10**pot_m):.2f}±{m_err/(10**pot_m):.2f}){a}*x + ({b/(10**pot_b):.2f}±{b_err/(10**pot_b):.2f}){c}'"""
+            label = f'Linearer Fit:  ({m/(10**pot_m):.2f}±{m_err/(10**pot_m):.2f}){a}*x + ({b/(10**pot_b):.2f}±{b_err/(10**pot_b):.2f}){c}'
 
             pot = max(pot_m, pot_b)
 
             if pot != 0:
                 a = f"e{pot}"
             else:
-                a = ""
+                a = "" """
 
-            label = f'Linearer Fit:  ({m / (10 ** pot):.2f}±{m_err / (10 ** pot):.2f}){a}*x + ({b / (10 ** pot):.2f}±{b_err / (10 ** pot):.2f}){a}'
+            label = f'Linearer Fit:  {param_string(m, 2)}(mA/V)x {param_string(b, 2)}(mA)'
 
         # Plot
         plt.plot(self.volt_fit, current_fit, 'r-', label=label)
-        plt.errorbar(self.volt, self.current, yerr=self.current_err, fmt='x', color='black', label='Messdaten', capsize=3)
+        if error_bar:
+            plt.errorbar(self.volt, self.current, yerr=self.current_err, fmt='x', color='black', label='Messdaten', capsize=3)
+        else:
+            plt.errorbar(self.volt, self.current, fmt='x', color='black', label='Messdaten')
+
 
         if linear:
             """mask_linear = (self.volt >= start) & (self.volt <= end)
@@ -203,26 +208,25 @@ class Plotter:
             #print(f"Fehler des Schnittpunkts: {sigma_x_intercept:.4f} V")
 
             # Plot der Ausgleichsgeraden im linearen Bereich
-            plt.plot(self.volt_fit, linear_fit, '-', label=f'Linearer Fit:  {param_string(slope,4)}x {param_string(intercept,4)}')
+            plt.plot(self.volt_fit, linear_fit, '--', label=f'Linearer Fit:  {param_string(slope,4)}(mA/V)x {param_string(intercept,4)}(mA)')
 
-            plt.errorbar(x_intercept, 0, xerr=sigma_x_intercept, fmt='.', color='black', label=f"Kniespannung: {param_string(x_intercept,4)} ± {sigma_x_intercept:.4f}",
+            plt.errorbar(x_intercept, 0, xerr=sigma_x_intercept, fmt='.', color='black', label=f"Kniespannung: ({param_string(x_intercept,4)} ± {sigma_x_intercept:.4f})V",
                          capsize=3)
 
         if self.current[-1] == 0:
-            height = 0.02
-            neg_height = -0.02
+            height = max(self.current_err) * 1.8
+            neg_height = -max(self.current_err) * 1.8
         else:
             height = self.current[-1]*1.2
             neg_height = 0
-        self.finish_plot( self.volt[-1]*1.05, height, y_beginning = neg_height)
+        self.finish_plot((self.volt[-1]-self.x_start)*1.05 + self.x_start, height, y_beginning=neg_height)
 
-
-    def finish_plot(self, x_lim, y_lim, x_beginning = 0.0, y_beginning = 0.0):
+    def finish_plot(self, x_lim, y_lim, y_beginning = 0.0):
         # Achsen und Layout
         plt.xlabel('Spannung (V)')
         plt.ylabel(self.y_label)
         plt.ylim(bottom=y_beginning, top=y_lim)
-        plt.xlim(left=x_beginning, right=x_lim)
+        plt.xlim(left=self.x_start, right=x_lim)
         plt.tick_params(axis='both', which="both", direction='in', top=True, right=True)
         #plt.minorticks_on()
         plt.gca().xaxis.set_minor_locator(AutoMinorLocator(5))
@@ -235,7 +239,7 @@ class Plotter:
         plt.legend()
         plt.tight_layout()
         if self.save:
-            plt.savefig(f"Graphs/{self.number}")
+            plt.savefig(f"Graphs/{self.number}", dpi=600)
             plt.close()
         else:
             plt.show()
