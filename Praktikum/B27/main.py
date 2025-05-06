@@ -1,7 +1,7 @@
 from Zeichnungen import *
 from data_file import *
 
-#plot_list = [0:name, 1:plot style, 2:linear, 3:linear start, 4:fit, 5:table number, 6:y lable, 7:x start, 8:y error]
+#plot_list = [0:name, 1:plot style, 2:linear, 3:linear start, 4:fit, 5:table number, 6:y lable, 7:x start, 8:show label]
 
 
 def fit(number, save = False):
@@ -13,11 +13,11 @@ def fit(number, save = False):
 
 
 def save_fits():
-    for i in range(1,10):
+    for i in range(1, 10):
         print(i)
         fit(i, True)
 
 
 if __name__ == '__main__':
-    save_fits()
-    #fit(7)
+    # save_fits()
+    fit(1)

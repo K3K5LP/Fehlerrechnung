@@ -45,7 +45,7 @@ _table3 = np.array([
             [0.6487, 0.000701141925718324, 5.18, 0.004],
             [0.68398, 0.000703491293478462, 10.602, 0.007]
         ])
-_table4 =  np.array([
+_table4 = np.array([
     [0.004,    0.000500399840127872, 0.0, 0.002],
     [0.9995,   0.000700285656000464, 0.0, 0.002],
     [2.0036,   0.001000199980004,    0.0, 0.002],
@@ -120,13 +120,13 @@ data_set = [[], _table1, _table2, _table3, _table4, _table5, _table6, _table7, _
 
 plot_list = [
     [],
-    ["Durchlassrichtung GE-Diode",      "normal",  True,   0.6,     3,      1,  "Strom (mA)", 0, True],
-    ["Sperrrichtung GE-Diode",          "normal",  False,  None,    "lin",  2,  "Strom (mA)", 0, True],
-    ["Widerstand GE-Diode",             "voltage", True,   None,    "exp",  1,  "Widerstand GE-Diode (Ω)", 0.2, True],
-    ["Durchlassrichtung Si-Diode",      "normal",  True,   0.6,     "exp",  3,  "Strom (mA)", 0.3, True],
-    ["Sperrrichtung Si-Diode",          "normal",  False,  None,    "lin",  4,  "Strom (mA)", 0, True],
-    ["Durchlassrichtung Zenerdiode",    "normal",  True,   0.7,     "exp",  5,  "Strom (mA)", 0.3, True],
-    ["Sperrrichtung Zenerdiode",        "normal",  True,   11.91,   "exp",  6,  "Strom (mA)", 9.7, True],
-    ["Spannungsangleichung Zenerdiode", "normal",  False,  None,    1,      7,  "Volt (V)", 0, False],
-    ["Durchlassrichtung LED",           "normal",  True,   1.84,    "exp",  8,  "Strom (mA)", 1.25, True],
+    ["Durchlassrichtung GE-Diode",      "normal",  True,   0.7,     3,      1,  "Strom (mA)", 0, "Kniespannung"],
+    ["Widerstand GE-Diode",             "voltage", True,   None,    "exp",  1,  "Widerstand GE-Diode (kΩ)", 0.2, None],
+    ["Sperrrichtung GE-Diode",          "normal",  False,  None,    "lin",  2,  "Strom (mA)", 0, None],
+    ["Durchlassrichtung Si-Diode",      "normal",  True,   0.6,     "exp",  3,  "Strom (mA)", 0.3, "Kniespannung"],
+    ["Sperrrichtung Si-Diode",          "normal",  False,  None,    "lin",  4,  "Strom (mA)", 0, None],
+    ["Durchlassrichtung Zenerdiode",    "normal",  True,   0.7,     "exp",  5,  "Strom (mA)", 0.3, "Kniespannung"],
+    ["Sperrrichtung Zenerdiode",        "normal",  True,   11.91,   "exp",  6,  "Strom (mA)", 9.7, "Zenerspannung"],
+    ["Spannungsangleichung Zenerdiode", "normal",  False,  None,    1,      7,  "Volt (V)", 0, None],
+    ["Durchlassrichtung LED",           "normal",  True,   1.84,    "exp",  8,  "Strom (mA)", 1.25, "Kniespannung"],
 ]

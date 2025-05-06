@@ -79,12 +79,15 @@ class Plotter:
         else:
             volt, current, volt_err, current_err = self.trim_data(size)
         [opt, cov] = sp.optimize.curve_fit(_affine_function, volt, current, sigma = current_err, absolute_sigma=True)
-        m,b = opt
+        m, b = opt
         m_err, b_err = np.sqrt(np.diag(cov))
+        print(cov)
+        mb_cov = cov[0][1]
+        print(cov[0][1])
 
         current_fit = _affine_function(self.volt_fit, m, b)
 
-        return current_fit, [m,b,m_err,b_err]
+        return current_fit, [m,b,m_err,b_err, mb_cov]
 
     def plot_voltage(self):
         volt, current, volt_err, current_err = self.trim_data(0.3)
@@ -109,6 +112,7 @@ class Plotter:
         label_res = f'Fit mit kubischen Splines des Widerstands'
         plt.plot(self.volt_fit, resistance_fit, '-', label=label_res)
         plt.errorbar(volt, resistance, yerr=res_err, fmt='x', color='black', capsize=3)
+        print(f"Widerstand: {resistance}, {res_err}")
 
         spline_delta = sp.interpolate.CubicSpline(new_volt, delta)
         delta_fit = spline_delta(self.volt_fit)
@@ -116,6 +120,7 @@ class Plotter:
 
         plt.plot(self.volt_fit, delta_fit, '--', label=label_delta)
         plt.errorbar(new_volt, delta, yerr=delta_err, fmt='x', color='black', capsize=3)
+        print(f"delta Widerstand: {delta}, {delta_err}")
 
 
 
@@ -139,16 +144,16 @@ class Plotter:
         elif fit == "exp":
             # Fit der exponentiellen Funktion
             initial_guess = [0, 10]
-            [params, _] = sp.optimize.curve_fit(_exp_function, self.volt, self.current, sigma=self.current_err, absolute_sigma=True,
-                                    p0=initial_guess, maxfev = 100000)
-            #print(params)
+            [params, _] = sp.optimize.curve_fit(_exp_function, self.volt, self.current, sigma=self.current_err,
+                                                absolute_sigma=True, p0=initial_guess, maxfev=100000)
+            # print(params)
             current_fit = _exp_function(self.volt_fit, *params)
             label = f'Exponentieller Fit: {params[0]:.4e}(mA) * exp[{params[1]:.2f}(1/V) * x]'
 
         elif fit == "lin":
 
-            current_fit,[m,b,m_err,b_err] = self.lin_model()
-            if m != 0:
+            current_fit, [m, b, _, _, _] = self.lin_model()
+            """if m != 0:
                 pot_m = int(np.log10(abs(m))-1)
             else:
                 pot_m = 0
@@ -157,7 +162,7 @@ class Plotter:
             else:
                 pot_b = 0
 
-            """if pot_m != 0:
+            if pot_m != 0:
                 a = f"e{pot_m}"
             else:
                 a=""
@@ -179,11 +184,10 @@ class Plotter:
 
         # Plot
         plt.plot(self.volt_fit, current_fit, 'r-', label=label)
-        if error_bar:
+        if linear:
             plt.errorbar(self.volt, self.current, yerr=self.current_err, fmt='x', color='black', label='Messdaten', capsize=3)
         else:
-            plt.errorbar(self.volt, self.current, fmt='x', color='black', label='Messdaten')
-
+            plt.errorbar(self.volt, self.current, yerr=self.current_err, fmt='x', color='black', capsize=3)
 
         if linear:
             """mask_linear = (self.volt >= start) & (self.volt <= end)
@@ -199,9 +203,11 @@ class Plotter:
             sigma_x_intercept = np.sqrt((intercept / slope ** 2 * slope_err) ** 2 + (1 / slope * intercept_err) ** 2)
             """
             # Ausgabe der Ergebnisse
-            linear_fit, [slope,intercept, slope_err, intercept_err] = self.lin_model(start)
+            linear_fit, [slope, intercept, slope_err, intercept_err, slope_intercept_cov] = self.lin_model(start)
             x_intercept = -intercept / slope
-            sigma_x_intercept = np.sqrt((intercept_err / slope) ** 2 + ((intercept * slope_err) / slope ** 2) ** 2)
+            sigma_x_intercept = np.sqrt(
+                (intercept_err / slope) ** 2 + ((intercept * slope_err) / slope ** 2) ** 2 -
+                2*((1/slope)*(intercept/(slope**2)))*slope_intercept_cov)
 
 
             #print(f"Schnittpunkt mit der x-Achse: {x_intercept:.4f} V")
