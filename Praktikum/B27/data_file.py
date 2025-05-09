@@ -121,12 +121,12 @@ data_set = [[], _table1, _table2, _table3, _table4, _table5, _table6, _table7, _
 plot_list = [
     [],
     ["Durchlassrichtung GE-Diode",      "normal",  True,   0.7,     3,      1,  "Strom (mA)", 0, "Kniespannung"],
-    ["Widerstand GE-Diode",             "voltage", True,   None,    "exp",  1,  "Widerstand GE-Diode (kΩ)", 0.2, None],
+    ["Widerstand GE-Diode",             "voltage", True,   None,    None,  1,  "Widerstand GE-Diode (kΩ)", 0.2, None],
     ["Sperrrichtung GE-Diode",          "normal",  False,  None,    "lin",  2,  "Strom (mA)", 0, None],
-    ["Durchlassrichtung Si-Diode",      "normal",  True,   0.6,     "exp",  3,  "Strom (mA)", 0.3, "Kniespannung"],
+    ["Durchlassrichtung Si-Diode",      "normal",  True,   0.6,     3,  3,  "Strom (mA)", 0.3, "Kniespannung"],
     ["Sperrrichtung Si-Diode",          "normal",  False,  None,    "lin",  4,  "Strom (mA)", 0, None],
-    ["Durchlassrichtung Zenerdiode",    "normal",  True,   0.7,     "exp",  5,  "Strom (mA)", 0.3, "Kniespannung"],
+    ["Durchlassrichtung Zenerdiode",    "normal",  True,   0.7,     3,  5,  "Strom (mA)", 0.3, "Kniespannung"],
     ["Sperrrichtung Zenerdiode",        "normal",  True,   11.91,   "exp",  6,  "Strom (mA)", 9.7, "Zenerspannung"],
-    ["Spannungsangleichung Zenerdiode", "normal",  False,  None,    1,      7,  "Volt (V)", 0, None],
-    ["Durchlassrichtung LED",           "normal",  True,   1.84,    "exp",  8,  "Strom (mA)", 1.25, "Kniespannung"],
+    ["Spannungsangleichung Zenerdiode", "normal",  False,  None,    1,      7,  "Ausgangsspannung (V)", 0, None],
+    ["Durchlassrichtung LED",           "normal",  True,   1.84,    3,  8,  "Strom (mA)", 1.25, "Kniespannung"],
 ]

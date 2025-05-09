@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
 import scipy as sp
+import math
 
 
 # Exponentielle Funktion: y = A * exp(B * x)
@@ -13,6 +14,21 @@ def _exp_function(x, a, b):
 
 def _affine_function(x, m, b):
     return m*x + b
+
+
+def round_sigfig(value, error, digits=2):
+    def _round_sig(number, r_digits):
+        if r_digits < 0:
+            r_digits = 0
+        r_number = f"{number:.{r_digits}f}"
+        return r_number, r_digits
+    if error != 0:
+        trunkate = digits - math.ceil(math.log10(abs(error)))
+    else:
+        trunkate = digits
+    r_error, sig_figs = _round_sig(abs(error), trunkate)
+    r_value, _ = _round_sig(value, sig_figs)
+    return r_value, r_error
 
 
 def param_string(parameter, accuracy=2):
@@ -31,6 +47,7 @@ class Plotter:
         self.number = f"[Graph {number}]"
         self.save = save
         self.x_start = x_start
+        self.size = 6
 
         # Extrahieren der Spannung (volt) und Stromwerte (current)
         self.volt = self.data[:, 0]
@@ -55,23 +72,16 @@ class Plotter:
 
     def lin_reg(self, size=None):
         if size is None:
-            size = [0, 30]
-        volt = []
-        current = []
-        volt_err = []
-        current_err = []
-        for x in range(len(self.volt)):
-            if size[0] <= self.volt[x] <= size[1]:
-                volt.append(self.volt[x])
-                current.append(self.current[x])
-                volt_err.append(self.volt_err[x])
-                current_err.append(self.current_err[x])
+            volt, current = self.volt, self.current
+        else:
+            volt, current, _, _ = self.trim_data(size)
 
-        data = sp.odr.RealData(volt, current, volt_err, current_err)
-        output = sp.odr.ODR(data, sp.odr.polynomial(1)).run()
-        lin_fit = np.poly1d(output.beta[::-1])
-        current_fit = lin_fit(self.volt_fit)
-        return current_fit
+        output = sp.stats.linregress(volt, current)
+        slope = output.slope
+        intercept = output.intercept
+        slope_err = output.stderr
+        intercept_err = output.intercept_stderr
+        print(slope, intercept, slope_err, intercept_err)
 
     def lin_model(self, size=None):
         if size is None:
@@ -81,15 +91,16 @@ class Plotter:
         [opt, cov] = sp.optimize.curve_fit(_affine_function, volt, current, sigma = current_err, absolute_sigma=True)
         m, b = opt
         m_err, b_err = np.sqrt(np.diag(cov))
-        print(cov)
+
         mb_cov = cov[0][1]
-        print(cov[0][1])
 
         current_fit = _affine_function(self.volt_fit, m, b)
 
-        return current_fit, [m,b,m_err,b_err, mb_cov]
+        return current_fit, [m, b, m_err, b_err, mb_cov]
 
     def plot_voltage(self):
+        plt.figure(figsize=(self.size * 1.41, self.size))
+
         volt, current, volt_err, current_err = self.trim_data(0.3)
         resistance = volt / current
         res_err = np.sqrt((volt_err/volt)**2+(current_err/current)**2)*resistance
@@ -97,7 +108,7 @@ class Plotter:
         delta = []
         delta_err = []
         new_volt = []
-        for i in range(1,len(volt)-1):
+        for i in range(1, len(volt)-1):
             res_now = (float(volt[i-1])-float(volt[i+1]))/(float(current[i-1])-float(current[i+1]))
             delta.append(res_now)
             new_volt.append(volt[i])
@@ -127,6 +138,8 @@ class Plotter:
         self.finish_plot(max(volt)*1.1, max(resistance)*1.05)
 
     def plot(self, linear, start, fit, error_bar):
+        plt.figure(figsize=(self.size * 1.41, self.size))
+
         current_fit = []
         label = ""
         # Fit-Kurve vorbereiten
@@ -148,7 +161,7 @@ class Plotter:
                                                 absolute_sigma=True, p0=initial_guess, maxfev=100000)
             # print(params)
             current_fit = _exp_function(self.volt_fit, *params)
-            label = f'Exponentieller Fit: {params[0]:.4e}(mA) * exp[{params[1]:.2f}(1/V) * x]'
+            label = f'Exponentieller Fit: {params[0]:.2e}(mA) * exp[{params[1]:.1f}(1/V) * x]'
 
         elif fit == "lin":
 
@@ -180,7 +193,7 @@ class Plotter:
             else:
                 a = "" """
 
-            label = f'Linearer Fit:  {param_string(m, 2)}(mA/V)x {param_string(b, 2)}(mA)'
+            label = f'Linearer Fit:  {round_sigfig(m,m,3)[0]}(mA/V)x {round_sigfig(b,b,3)[0]}(mA)'
 
         # Plot
         plt.plot(self.volt_fit, current_fit, 'r-', label=label)
@@ -214,9 +227,10 @@ class Plotter:
             #print(f"Fehler des Schnittpunkts: {sigma_x_intercept:.4f} V")
 
             # Plot der Ausgleichsgeraden im linearen Bereich
-            plt.plot(self.volt_fit, linear_fit, '--', label=f'Linearer Fit:  {param_string(slope,4)}(mA/V)x {param_string(intercept,4)}(mA)')
-
-            plt.errorbar(x_intercept, 0, xerr=sigma_x_intercept, fmt='.', color='black', label=f"Kniespannung: ({param_string(x_intercept,4)} ± {sigma_x_intercept:.4f})V",
+            round_sigfig(x_intercept, sigma_x_intercept)
+            plt.plot(self.volt_fit, linear_fit, '--', label=f'Linearer Fit:  {round_sigfig(slope,slope,3)[0]}(mA/V)x {round_sigfig(intercept,intercept,3)[0]}(mA)')
+            x, x_err = round_sigfig(x_intercept, sigma_x_intercept, 2)
+            plt.errorbar(x_intercept, 0, xerr=sigma_x_intercept, fmt='.', color='black', label=f"Kniespannung: ({x} ± {x_err})V",
                          capsize=3)
 
         if self.current[-1] == 0:
@@ -227,9 +241,9 @@ class Plotter:
             neg_height = 0
         self.finish_plot((self.volt[-1]-self.x_start)*1.05 + self.x_start, height, y_beginning=neg_height)
 
-    def finish_plot(self, x_lim, y_lim, y_beginning = 0.0):
+    def finish_plot(self, x_lim, y_lim, y_beginning=0.0):
         # Achsen und Layout
-        plt.xlabel('Spannung (V)')
+        plt.xlabel('anliegende Spannung (V)')
         plt.ylabel(self.y_label)
         plt.ylim(bottom=y_beginning, top=y_lim)
         plt.xlim(left=self.x_start, right=x_lim)
@@ -238,9 +252,9 @@ class Plotter:
         plt.gca().xaxis.set_minor_locator(AutoMinorLocator(5))
         plt.gca().yaxis.set_minor_locator(AutoMinorLocator(5))
         plt.title(self.title, loc='left', y=1.04)
-        plt.figtext(1, 1.04, f"Marius Trabert, {datetime.datetime.now().strftime('%d. %B %Y')}", ha='right', va='top',
+        plt.figtext(1, 1.04, f"Marius Trabert, {datetime.datetime.now().strftime('%d.%m.%Y')}", ha='right', va='top',
                     transform=plt.gca().transAxes, fontsize=10)
-        plt.figtext(0.98,0.04,self.number, ha="right")
+        plt.figtext(0.98, 0.04, self.number, ha="right")
         plt.get_current_fig_manager().set_window_title(self.number)
         plt.legend()
         plt.tight_layout()

@@ -18,6 +18,7 @@ def save_fits():
         fit(i, True)
 
 
+
 if __name__ == '__main__':
-    # save_fits()
-    fit(1)
+    save_fits()
+    #fit(9)
