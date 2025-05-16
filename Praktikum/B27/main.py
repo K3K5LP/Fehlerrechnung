@@ -7,7 +7,7 @@ from data_file import *
 def fit(number, save = False):
     table = Plotter(plot_list[number][5], number, plot_list[number][6], plot_list[number][0], save=save, x_start=plot_list[number][7])
     if plot_list[number][1] == "normal":
-        table.plot(linear=plot_list[number][2], start=plot_list[number][3], fit=plot_list[number][4], error_bar=plot_list[number][8])
+        table.plot(linear=plot_list[number][2], start=plot_list[number][3], fit=plot_list[number][4], lin_label=plot_list[number][8])
     if plot_list[number][1] == "voltage":
         table.plot_voltage()
 
@@ -20,5 +20,5 @@ def save_fits():
 
 
 if __name__ == '__main__':
-    save_fits()
-    #fit(9)
+    #save_fits()
+    fit(7, True)

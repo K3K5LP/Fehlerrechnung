@@ -31,11 +31,11 @@ def round_sigfig(value, error, digits=2):
     return r_value, r_error
 
 
-def param_string(parameter, accuracy=2):
-    if parameter < 0:
-        return str(f"-{abs(parameter):.{accuracy}}")
+def param_string(parameter):
+    if float(parameter) < 0:
+        return str(f"-{parameter.strip('-')}")
     else:
-        return str(f"+{parameter:.{accuracy}}")
+        return str(f"+{parameter}")
 
 
 class Plotter:
@@ -137,7 +137,7 @@ class Plotter:
 
         self.finish_plot(max(volt)*1.1, max(resistance)*1.05)
 
-    def plot(self, linear, start, fit, error_bar):
+    def plot(self, linear, start, fit, lin_label):
         plt.figure(figsize=(self.size * 1.41, self.size))
 
         current_fit = []
@@ -193,7 +193,7 @@ class Plotter:
             else:
                 a = "" """
 
-            label = f'Linearer Fit:  {round_sigfig(m,m,3)[0]}(mA/V)x {round_sigfig(b,b,3)[0]}(mA)'
+            label = f'Linearer Fit:  {round_sigfig(m,m,3)[0]}(mA/V)x {param_string(round_sigfig(b,b,3)[0])}(mA)'
 
         # Plot
         plt.plot(self.volt_fit, current_fit, 'r-', label=label)
@@ -228,9 +228,9 @@ class Plotter:
 
             # Plot der Ausgleichsgeraden im linearen Bereich
             round_sigfig(x_intercept, sigma_x_intercept)
-            plt.plot(self.volt_fit, linear_fit, '--', label=f'Linearer Fit:  {round_sigfig(slope,slope,3)[0]}(mA/V)x {round_sigfig(intercept,intercept,3)[0]}(mA)')
+            plt.plot(self.volt_fit, linear_fit, '--', label=f'Linearer Fit:  {round_sigfig(slope,slope,3)[0]}(mA/V)x {param_string(round_sigfig(intercept,intercept,3)[0])}(mA)')
             x, x_err = round_sigfig(x_intercept, sigma_x_intercept, 2)
-            plt.errorbar(x_intercept, 0, xerr=sigma_x_intercept, fmt='.', color='black', label=f"Kniespannung: ({x} ± {x_err})V",
+            plt.errorbar(x_intercept, 0, xerr=sigma_x_intercept, fmt='.', color='black', label=f"{lin_label}: ({x} ± {x_err})V",
                          capsize=3)
 
         if self.current[-1] == 0:
