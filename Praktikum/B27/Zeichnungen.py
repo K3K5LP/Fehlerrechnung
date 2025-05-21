@@ -133,8 +133,6 @@ class Plotter:
         plt.errorbar(new_volt, delta, yerr=delta_err, fmt='x', color='black', capsize=3)
         print(f"delta Widerstand: {delta}, {delta_err}")
 
-
-
         self.finish_plot(max(volt)*1.1, max(resistance)*1.05)
 
     def plot(self, linear, start, fit, lin_label):

@@ -54,11 +54,11 @@ class LinReg:
     def covariant(self):
         cov = x_err = y_err = 0
         for i in self.data:
-            x_erriter = i[0] - self.x_mean
-            x_err += x_erriter**2
-            y_erriter = i[1] - self.y_mean
-            y_err += y_erriter**2
-            cov += x_erriter*y_erriter
+            x_err_iter = i[0] - self.x_mean
+            x_err += x_err_iter**2
+            y_err_iter = i[1] - self.y_mean
+            y_err += y_err_iter**2
+            cov += x_err_iter*y_err_iter
         cov = cov / len(self.data)
         x_err = x_err / len(self.data)
         y_err = y_err / len(self.data)
@@ -69,35 +69,68 @@ class LinReg:
         return r
 
 
-def plot(line):
-    plt.errorbar(line.x_data, line.y_data, fmt='x', color='black')
+class Plot:
+    def __init__(self, line):
+        self.line = line
+        self.boundary = [self.line.x_data[0]-2, self.line.x_data[-1]+2]
 
-    fit = [_affine_function(x, line.slope, line.intercept) for x in line.x_data]
-    slope, slope_err = round_sigfig(line.slope, line.slope_err)
-    intercept, intercept_err = round_sigfig(line.intercept, line.intercept_err)
-    label = f"Ausgleichsgerade:\n{slope} ±{slope_err} "\
-            f"[g/(m³*°C)]*x +{slope} ±{slope_err}[g/m³]"
+        self._graph = plt
 
-    plt.plot(line.x_data, fit, 'r-', label=label)
+        self._plot_ready()
 
-    plt.xlabel('Temperatur [°C]')
-    plt.ylabel('Luftfeuchte [g/m³]')
-    plt.title('Darstellung Korrelation Temperatur zu rel. Luftfeuchtigkeit', loc='left', y=1.04)
-    plt.legend()
-    plt.tick_params(axis='both', which="both", direction='in', top=True, right=True)
-    plt.gca().xaxis.set_minor_locator(AutoMinorLocator(5))
-    plt.gca().yaxis.set_minor_locator(AutoMinorLocator(5))
+    def _plot_ready(self):
 
-    plt.figtext(1, 1.04, f"Marius Trabert, {datetime.datetime.now().strftime('%d. %B %Y')}", ha='right', va='top',
-                transform=plt.gca().transAxes, fontsize=10)
-    plt.show()
+        self._graph.errorbar(self.line.x_data, self.line.y_data, fmt='x', color='black')
+
+        temp_range = np.linspace(self.boundary[0], self.boundary[1], 5)
+        regression_line = _affine_function(temp_range, self.line.slope, self.line.intercept)
+        slope, slope_err = round_sigfig(self.line.slope, self.line.slope_err)
+        intercept, intercept_err = round_sigfig(self.line.intercept, self.line.intercept_err)
+        label_txt = f"Ausgleichsgerade:\n{slope} ±{slope_err} "\
+                    f"(g/(m³*°C))*x +{intercept} ±{intercept_err}(g/m³)"
+        self._graph.plot(temp_range, regression_line, 'r-', label=label_txt)
+
+        self._graph.xlim(left=self.boundary[0], right=self.boundary[1])
+        self._graph.xlabel('Temperatur (°C)')
+        self._graph.ylabel('Luftfeuchte (g/m³)')
+        self._graph.title('Darstellung Korrelation Temperatur zu rel. Luftfeuchtigkeit', loc='left', y=1.04)
+
+        self._graph.tick_params(axis='both', which="both", direction='in', top=True, right=True)
+        self._graph.gca().xaxis.set_minor_locator(AutoMinorLocator(5))
+        self._graph.gca().yaxis.set_minor_locator(AutoMinorLocator(5))
+
+        self._graph.figtext(1, 1.04, f"Marius Trabert, {datetime.datetime.now().strftime('%d. %B %Y')}", ha='right', va='top',
+                    transform=self._graph.gca().transAxes, fontsize=10)
+        self._graph.legend()
+
+    def show_plot(self):
+        self._graph.show()
+
+    def save_plot(self):
+        self._graph.savefig()
+
+
+class PlotTest:
+
+    def __init__(self):
+        self.boundary = [-2, 2]
+        temp_range = np.linspace(self.boundary[0], self.boundary[1], 5)
+        regression_line = _affine_function(temp_range, 1, 2)
+        plt.plot(temp_range, regression_line, 'r-', label="label_txt")
+        plt.legend()
+        plt.show()
 
 
 if __name__ == '__main__':
-
-    data_set = [[-15, 0.79], [-11, 0.90], [-7, 1.32],[-3, 2.23],[1, 1.91],[5, 2.12],[9,5.09],[13, 5.03],[17, 5.30], [21, 6.57],[25, 8.48],
-                [29, 12.98], [33, 18.54], [37, 22.57], [41, 35.07]]
+    # Meine
+    data_set = [[-15, 0.79], [-11, 0.90], [-7, 1.32], [-3, 2.23], [1, 1.91], [5, 2.12], [9, 5.09], [13, 5.03],
+                 [17, 5.30], [21, 6.57], [25, 8.48], [29, 12.98], [33, 18.54], [37, 22.57], [41, 35.07]]
+    # 16
+    _data_set = [[-15, 0.65], [-11, 0.73], [-7, 1.08], [-3, 1.81], [1, 1.55], [5, 1.72], [9, 4.13], [13, 4.09],
+                [17, 4.30], [21, 5.33], [25, 6.88], [29, 10.54], [33, 15.05], [37, 18.32], [41, 28.47]]
     calc = LinReg(data_set)
     print(calc.r_value)
 
-    plot(calc)
+    plot = Plot(calc)
+    plot.show_plot()
+
