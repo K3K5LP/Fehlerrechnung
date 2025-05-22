@@ -40,7 +40,7 @@ class LinReg:
         self.x_mean = mean([val[0] for val in data])
         self.y_data = [val[1] for val in data]
         self.y_mean = mean([val[1] for val in data])
-        print(self.x_mean, self.y_mean)
+        # print(self.x_mean, self.y_mean)
         self.covar, self.x_err, self.y_err = self.covariant()
 
         self.result = scipy.stats.linregress(data)
@@ -88,26 +88,35 @@ class Plot:
         intercept, intercept_err = round_sigfig(self.line.intercept, self.line.intercept_err)
         label_txt = f"Ausgleichsgerade:\n{slope} ±{slope_err} "\
                     f"(g/(m³*°C))*x +{intercept} ±{intercept_err}(g/m³)"
+        label_txt = f"Ausgleichsgerade:\n" \
+                    f"B⋅x + A"
+        undertitle = f"Werte der Ausgleichsgeraden betragen:\n" \
+                     f"Steigung B: ({slope} ±{slope_err})(g/(°C⋅m³))\n" \
+                     f"Ordinaten-verschiebung A: ({intercept} ±{intercept_err})(g/m³)"
         self._graph.plot(temp_range, regression_line, 'r-', label=label_txt)
 
         self._graph.xlim(left=self.boundary[0], right=self.boundary[1])
         self._graph.xlabel('Temperatur (°C)')
+        plt.ylim(bottom=0)
         self._graph.ylabel('Luftfeuchte (g/m³)')
-        self._graph.title('Darstellung Korrelation Temperatur zu rel. Luftfeuchtigkeit', loc='left', y=1.04)
+        self._graph.title('Darstellung Korrelation Temperatur zu rel. Luftfeuchte', loc='left', y=1.05)
 
         self._graph.tick_params(axis='both', which="both", direction='in', top=True, right=True)
         self._graph.gca().xaxis.set_minor_locator(AutoMinorLocator(5))
         self._graph.gca().yaxis.set_minor_locator(AutoMinorLocator(5))
 
-        self._graph.figtext(1, 1.04, f"Marius Trabert, {datetime.datetime.now().strftime('%d. %B %Y')}", ha='right', va='top',
+        self._graph.figtext(1, 1.05, f"Marius Trabert, {datetime.datetime.now().strftime('%d. %B %Y')}", ha='right', va='top',
                     transform=self._graph.gca().transAxes, fontsize=10)
+        self._graph.subplots_adjust(bottom=0.25)
+        self._graph.figtext(0.125, 0.04, undertitle)
+
         self._graph.legend()
 
     def show_plot(self):
         self._graph.show()
 
     def save_plot(self):
-        self._graph.savefig()
+        self._graph.savefig(f"Graphs/Blatt_3", dpi=600)
 
 
 class PlotTest:
@@ -128,9 +137,13 @@ if __name__ == '__main__':
     # 16
     _data_set = [[-15, 0.65], [-11, 0.73], [-7, 1.08], [-3, 1.81], [1, 1.55], [5, 1.72], [9, 4.13], [13, 4.09],
                 [17, 4.30], [21, 5.33], [25, 6.88], [29, 10.54], [33, 15.05], [37, 18.32], [41, 28.47]]
+    # 59
+    _data_set = [[-15, 0.87], [-11, 0.99], [-7, 1.45], [-3, 2.43], [1, 2.09], [5, 2.32], [9, 5.56], [13, 5.51],
+                [17, 5.80], [21, 7.19], [25, 9.27], [29, 14.2], [33, 20.29], [37, 24.69], [41, 38.37]]
+
     calc = LinReg(data_set)
-    print(calc.r_value)
+    print(calc.covar)
 
     plot = Plot(calc)
-    plot.show_plot()
+    plot.save_plot()
 
