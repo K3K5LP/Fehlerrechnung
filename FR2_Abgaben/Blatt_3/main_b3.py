@@ -145,5 +145,5 @@ if __name__ == '__main__':
     print(calc.covar)
 
     plot = Plot(calc)
-    plot.save_plot()
+    plot.show_plot()
 
