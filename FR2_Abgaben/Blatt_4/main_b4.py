@@ -76,6 +76,7 @@ class Plot:
         self.reg = _reg
         self.boundary = [self.reg.x_data[0], self.reg.x_data[-1]+0.03]
 
+
         self._graph = plt
 
         self._plot_ready()
