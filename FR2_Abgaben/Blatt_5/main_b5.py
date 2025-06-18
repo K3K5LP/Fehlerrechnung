@@ -203,6 +203,6 @@ class Data59:
 if __name__ == '__main__':
     data = Data66()
     plot = Plot(data)
-    plot.save_plot()
-    plot.save_residuals()
+    plot.show_plot()
+    plot.show_residuals()
 
