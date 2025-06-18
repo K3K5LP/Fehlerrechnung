@@ -205,3 +205,4 @@ if __name__ == '__main__':
     plot = Plot(data)
     plot.save_plot()
     plot.save_residuals()
+
