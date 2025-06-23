@@ -95,8 +95,11 @@ class ChiSquared:
         x_min = -B / (2*A)
         return x_min
 
-    def optimize(self, delta_a=50, delta_b=0.002, tol=1e-10, max_iter=2000):
-        a, b = self.start
+    def optimize(self, delta_a=50, delta_b=0.002, tol=1e-10, max_iter=2000, second=False, start=None):
+        if start is None:
+            a, b = self.start
+        else:
+            a, b = start
         # print(f"Startwerte: a = {a:.2f}, b = {b:.5f}")
         chi2_new = self.chi_squared(a, b)
         for iteration in range(max_iter):
@@ -119,8 +122,8 @@ class ChiSquared:
             a_opt = self.parabolisches_minimum(*a_candidates, *chi2_a)
 
             prev_chi2_b = prev_chi2
-            chi2_down_b = self.chi_squared(a, b- delta_b)
-            chi2_up_b = self.chi_squared(a, b+ delta_b)
+            chi2_down_b = self.chi_squared(a, b - delta_b)
+            chi2_up_b = self.chi_squared(a, b + delta_b)
             while chi2_down_b < prev_chi2_b:
                 b = b - delta_b
                 prev_chi2_b = chi2_down_a
@@ -144,8 +147,13 @@ class ChiSquared:
                 print(f"Iter {iteration+1}: a = {a_opt}, b = {b_opt}, chi² = {chi2_new}")
 
                 if abs(chi2_new - prev_chi2) < tol:
-                    print("Konvergenz erreicht.")
-                    break
+                    print("test ende")
+                    if second or abs(self.optimize(delta_a/10, delta_b/10, tol, second=True, start=[a_opt, b_opt])[2]-chi2_new) < tol:
+                        print("Konvergenz erreicht.")
+                        break
+                    else:
+                        delta_a = delta_a / 100
+                        delta_b = delta_b / 100
 
             a, b = a_opt, b_opt
 
@@ -160,7 +168,7 @@ class Data66:
         self.x_data = np.array([20, 40, 60, 80, 100, 120, 140, 160, 180, 200])
         self.y_data = np.array([1567, 1277, 923, 803, 546, 498, 332, 299, 210, 172])
         self.boundary = [[0, 10000], [0, 0.05]]
-        self.start = [2000, 0.012]
+        self.start = [3000, 0.015]
 
 
 class Data59:
@@ -182,4 +190,4 @@ if __name__ == '__main__':
     # chi.save_big_plot()
     # chi.save_small_plot()
     # chi.show_big_plot()
-    # chi.show_small_plot()
+    #chi.show_small_plot()
