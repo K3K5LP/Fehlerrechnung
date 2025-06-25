@@ -52,12 +52,13 @@ class Calculations:
         return out
 
     def _calc_params(self):
-        x = np.column_stack((self.data.x_data, self.data.x_data ** 2))
-        x = sm.add_constant(x)
-        model = sm.OLS(self.data.y_data, x)
-        results = model.fit()
+        beta = np.array([0.0, 0.0, 0.0])
+        for i in range(self.degree + 1):
+            for (x, y) in zip(self.data.x_data, self.data.y_data):
+                beta[i] += (1 / (self._error ** 2)) * y * (x ** i)
+        print(beta)
 
-        self.parameters = results.params
+        self.parameters = self.covar @ beta
 
         deriv_sum = 0
         for i in range(self.degree + 1):
@@ -104,6 +105,24 @@ class Data16:
         ])
 
 
+class Data19:
+    def __init__(self):
+        self.x_data = np.array(
+            [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100])
+        self.y_data = np.array([
+    -0.486, -0.250, -0.159, -0.156, -0.140, 0.156, 0.174, 0.488, 0.939, 1.203,
+    1.558, 1.622, 1.875, 2.134, 2.239, 2.479, 2.738, 2.895, 3.207, 3.410, 3.450])
+
+
+class Datavorlesung:
+    def __init__(self):
+        self.x_data = np.array(
+            [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100])
+        self.y_data = np.array([
+    -0.849, -0.738, -0.537, -0.354, -0.196, -0.019, 0.262, 0.413, 0.734, 0.882,
+    1.258, 1.305, 1.541, 1.768, 1.935, 2.147, 2.456, 2.676, 2.994, 3.200, 3.318])
+
+
 class Datakorr:
     def __init__(self):
         self.x_data = np.array([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100])
@@ -112,6 +131,6 @@ class Datakorr:
 
 
 if __name__ == '__main__':
-    data = Data66()
+    data = Data59()
     calc = Calculations(data)
     print(calc.out)
