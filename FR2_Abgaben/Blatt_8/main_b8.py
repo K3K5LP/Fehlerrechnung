@@ -7,221 +7,175 @@ import datetime
 
 class ExponentialFit:
     def __init__(self, x_data, y_data, y_err, fixed_half_life=None, name=""):
+        self.name = name
+
         self.x_data = np.array(x_data)
         self.y_data = np.array(y_data)
         self.y_err = np.array(y_err)
         self.fixed_half_life = fixed_half_life
-        self.name = name
 
-        self.results_free_hwz = None
-        self.results_fixed_hwz = None
-        self.results_fixed_hwz_with_b = None  # Neu: mit Verschiebung b
+        self.results = {}
 
-    # Modell ohne Verschiebung
-    def model(self, x, a, tau):
-        return a * np.exp(-x / tau)
+    def model(self, x, A, tau, b):
+        return A * np.exp(-x / tau) + b
 
-    # Modell mit Verschiebung b
-    def model_with_b(self, x, a, b, tau):
-        return a * np.exp(-x / tau) + b
+    def model_no_b(self, x, A, tau):
+        return A * np.exp(-x / tau)
 
-    def fit_free_hwz(self):
-        p0 = [self.y_data[0], 100]
-        popt, pcov = curve_fit(
-            self.model,
-            self.x_data,
-            self.y_data,
-            sigma=self.y_err,
-            absolute_sigma=True,
-            p0=p0
-        )
-        y_fit = self.model(self.x_data, *popt)
-        residuals = (self.y_data - y_fit) / self.y_err
-        chi2 = np.sum(residuals**2)
-        ndof = len(self.x_data) - len(popt)
-        chi2_red = chi2 / ndof
+    def model_fixed_tau(self, x, A, b, tau_fixed):
+        return A * np.exp(-x / tau_fixed) + b
 
-        tau = popt[1]
-        tau_err = np.sqrt(pcov[1, 1])
-        half_life = tau * np.log(2)
-        half_life_err = tau_err * np.log(2)
+    def model_fixed_tau_no_b(self, x, A, tau_fixed):
+        return A * np.exp(-x / tau_fixed)
 
-        self.results_free_hwz = {
-            'popt': popt,
-            'pcov': pcov,
-            'chi2_red': chi2_red,
-            'half_life': half_life,
-            'half_life_err': half_life_err
-        }
+    # Fit-Funktionen
+    def fit_free_tau_free_b(self):
+        p0 = [self.y_data[0], (self.x_data[-1]-self.x_data[0])/2, 0]
+        popt, pcov = curve_fit(self.model, self.x_data, self.y_data, sigma=self.y_err, p0=p0, absolute_sigma=True)
+        red_chi2 = self._reduced_chi2(self.model(self.x_data, *popt))
+        self.results['free_tau_free_b'] = (popt, pcov, red_chi2)
 
-    def fit_fixed_hwz(self):
+    def fit_free_tau_b0(self):
+        p0 = [self.y_data[0], (self.x_data[-1]-self.x_data[0])/2]
+        popt, pcov = curve_fit(self.model_no_b, self.x_data, self.y_data, sigma=self.y_err, p0=p0, absolute_sigma=True)
+        red_chi2 = self._reduced_chi2(self.model_no_b(self.x_data, *popt))
+        self.results['free_tau_b0'] = (popt, pcov, red_chi2)
+
+    def fit_fixed_tau_free_b(self):
         if self.fixed_half_life is None:
-            print("Keine feste Halbwertszeit vorgegeben.")
+            print("⚠️ Feste HWZ nicht gesetzt.")
             return
-
         tau_fixed = self.fixed_half_life / np.log(2)
-
-        def model_fixed_tau(x, a):
-            return a * np.exp(-x / tau_fixed)
-
-        p0 = [self.y_data[0]]
-        popt, pcov = curve_fit(
-            model_fixed_tau,
-            self.x_data,
-            self.y_data,
-            sigma=self.y_err,
-            absolute_sigma=True,
-            p0=p0
-        )
-        y_fit = model_fixed_tau(self.x_data, *popt)
-        residuals = (self.y_data - y_fit) / self.y_err
-        chi2 = np.sum(residuals**2)
-        ndof = len(self.x_data) - len(popt)
-        chi2_red = chi2 / ndof
-
-        self.results_fixed_hwz = {
-            'popt': popt,
-            'pcov': pcov,
-            'chi2_red': chi2_red,
-            'tau_fixed': tau_fixed
-        }
-
-    # Neu: Fit mit fester HWZ und Verschiebung b
-    def fit_fixed_hwz_with_b(self):
-        if self.fixed_half_life is None:
-            print("Keine feste Halbwertszeit vorgegeben.")
-            return
-
-        tau_fixed = self.fixed_half_life / np.log(2)
-
-        def model_fixed_tau_b(x, a, b):
-            return a * np.exp(-x / tau_fixed) + b
-
         p0 = [self.y_data[0], 0]
-        popt, pcov = curve_fit(
-            model_fixed_tau_b,
-            self.x_data,
-            self.y_data,
-            sigma=self.y_err,
-            absolute_sigma=True,
-            p0=p0
-        )
-        y_fit = model_fixed_tau_b(self.x_data, *popt)
-        residuals = (self.y_data - y_fit) / self.y_err
-        chi2 = np.sum(residuals**2)
-        ndof = len(self.x_data) - len(popt)
-        chi2_red = chi2 / ndof
+        popt, pcov = curve_fit(lambda x, A, b: self.model_fixed_tau(x, A, b, tau_fixed),
+                               self.x_data, self.y_data, sigma=self.y_err, p0=p0, absolute_sigma=True)
+        red_chi2 = self._reduced_chi2(self.model_fixed_tau(self.x_data, *popt, tau_fixed))
+        self.results['fixed_tau_free_b'] = (popt, pcov, red_chi2)
 
-        self.results_fixed_hwz_with_b = {
-            'popt': popt,
-            'pcov': pcov,
-            'chi2_red': chi2_red,
-            'tau_fixed': tau_fixed
+    def fit_fixed_tau_b0(self):
+        if self.fixed_half_life is None:
+            print("⚠️ Feste HWZ nicht gesetzt.")
+            return
+        tau_fixed = self.fixed_half_life / np.log(2)
+        p0 = [self.y_data[0]]
+        popt, pcov = curve_fit(lambda x, A: self.model_fixed_tau_no_b(x, A, tau_fixed),
+                               self.x_data, self.y_data, sigma=self.y_err, p0=p0, absolute_sigma=True)
+        red_chi2 = self._reduced_chi2(self.model_fixed_tau_no_b(self.x_data, *popt, tau_fixed))
+        self.results['fixed_tau_b0'] = (popt, pcov, red_chi2)
+
+    def _reduced_chi2(self, y_fit):
+        res = (self.y_data - y_fit) / self.y_err
+        dof = len(self.y_data) - (len(self.results) + 1)
+        return np.sum(res**2) / dof if dof > 0 else np.nan
+
+    def fit_all(self):
+        self.fit_free_tau_free_b()
+        self.fit_free_tau_b0()
+        if self.fixed_half_life is not None:
+            self.fit_fixed_tau_free_b()
+            self.fit_fixed_tau_b0()
+        else:
+            print("⚠️ Feste HWZ nicht angegeben – fixe HWZ-Fits werden übersprungen.")
+
+    def _plot(self, mode):
+        mode_map = {
+            0: ('free_tau_free_b', 'Freie HWZ, freies b'),
+            1: ('free_tau_b0', 'Freie HWZ, b=0'),
+            2: ('fixed_tau_free_b', f'Feste HWZ={self.fixed_half_life} s, freies b'),
+            3: ('fixed_tau_b0', f'Feste HWZ={self.fixed_half_life} s, b=0')
         }
 
-    def _plot(self):
-        if self.results_free_hwz is None:
-            self.fit_free_hwz()
-        if self.fixed_half_life is not None and self.results_fixed_hwz is None:
-            self.fit_fixed_hwz()
-        if self.fixed_half_life is not None and self.results_fixed_hwz_with_b is None:
-            self.fit_fixed_hwz_with_b()
+        if mode not in mode_map:
+            print("Bitte Modus 0-3 angeben!")
+            return
+
+        key, title = mode_map[mode]
+        if key not in self.results:
+            getattr(self, f"fit_{key}")()
+
+
+        popt, pcov, red_chi2 = self.results[key]
+        perr = np.sqrt(np.diag(pcov))
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-        fig.suptitle("Plausibilitätsbetrachtung einer Praktikumsauswertung", x=0.1,  ha="left")
-        fig.text(0.97, 0.95, f"{self.name}, {datetime.datetime.now().strftime('%d. %B %Y')}", ha='right', va='top', fontsize=10)
-            # (1, 1.05, f"{self.name}, {datetime.datetime.now().strftime('%d. %B %Y')}", fontsize=10)
+        fig.suptitle("Plausibilitätsbetrachtung einer Praktikumsauswertung", x=0.1, ha="left")
+        fig.text(0.1, 0.90,title, ha='left', fontsize=14)
+        fig.text(0.97, 0.90, f"{self.name}, {datetime.datetime.now().strftime('%d. %B %Y')}", ha='right', va='top',
+                 fontsize=10)
 
-        ax1.errorbar(self.x_data, self.y_data, yerr=self.y_err, fmt='kx', label='Daten', capsize=5)
+        ax1.errorbar(self.x_data, self.y_data, yerr=self.y_err, fmt='o', capsize=5, label='Daten')
 
-        x_fit = np.linspace(min(self.x_data), max(self.x_data), 500)
+        x_fit = np.linspace(self.x_data.min(), self.x_data.max(), 500)
 
+        if key == 'free_tau_free_b':
+            y_fit = self.model(x_fit, *popt)
+            y_model = self.model(self.x_data, *popt)
+            tau = popt[1]
+            tau_err = perr[1]
+        elif key == 'free_tau_b0':
+            y_fit = self.model_no_b(x_fit, *popt)
+            y_model = self.model_no_b(self.x_data, *popt)
+            tau = popt[1]
+            tau_err = perr[1]
+        elif key == 'fixed_tau_free_b':
+            tau = self.fixed_half_life / np.log(2)
+            tau_err = 0
+            y_fit = self.model_fixed_tau(x_fit, *popt, tau)
+            y_model = self.model_fixed_tau(self.x_data, *popt, tau)
+        elif key == 'fixed_tau_b0':
+            tau = self.fixed_half_life / np.log(2)
+            tau_err = 0
+            y_fit = self.model_fixed_tau_no_b(x_fit, *popt, tau)
+            y_model = self.model_fixed_tau_no_b(self.x_data, *popt, tau)
 
-        # Freie HWZ
-        y_fit_free = self.model(x_fit, *self.results_free_hwz['popt'])
-        ax1.plot(x_fit, y_fit_free, 'r-', label='Fit (freie HWZ)')
-
-        # Feste HWZ
-        if self.results_fixed_hwz is not None:
-            tau_fixed = self.results_fixed_hwz['tau_fixed']
-
-            def model_fixed_tau(x, a):
-                return a * np.exp(-x / tau_fixed)
-
-            y_fit_fixed = model_fixed_tau(x_fit, *self.results_fixed_hwz['popt'])
-            ax1.plot(x_fit, y_fit_fixed, 'b--', label=f'Fit (feste HWZ={self.fixed_half_life:.1f} s)')
-
-        # Plot von fester HWZ mit b NICHT, nur berechnen!
-
-        ax1.set_ylabel('Zählrate')
-        ax1.legend()
-        ax1.tick_params(axis='both', which="both", direction='in', top=True, right=True)
+        ax1.plot(x_fit, y_fit, 'r-', label='Fit')
+        ax1.set_ylabel("Zählrate")
+        ax1.tick_params(axis='both', which='both', direction='in', top=True, right=True)
         ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
         ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
 
-
-
-
-
-        # Residuen plotten
-        y_model_free = self.model(self.x_data, *self.results_free_hwz['popt'])
-        res_free = (self.y_data - y_model_free) / self.y_err
-        ax2.errorbar(self.x_data, res_free, yerr=np.ones_like(self.y_err), fmt='ro', label='Residuen (frei)', capsize=5)
-
-        if self.results_fixed_hwz is not None:
-            tau_fixed = self.results_fixed_hwz['tau_fixed']
-
-            def model_fixed_tau(x, a):
-                return a * np.exp(-x / tau_fixed)
-
-            y_model_fixed = model_fixed_tau(self.x_data, *self.results_fixed_hwz['popt'])
-            res_fixed = (self.y_data - y_model_fixed) / self.y_err
-            ax2.errorbar(self.x_data, res_fixed, yerr=np.ones_like(self.y_err), fmt='bx', label='Residuen (fest)', capsize=5)
-
+        res = (self.y_data - y_model) / self.y_err
+        ax2.errorbar(self.x_data, res, yerr=np.ones_like(res), fmt='o', capsize=5)
         ax2.axhline(0, color='k', linestyle='--')
-        ax2.set_xlabel('Zeit [s]')
-        ax2.set_ylabel('Normierte Residuen')
-        ax2.legend()
-
-        ax2.tick_params(axis='both', which="both", direction='in', top=True, right=True)
+        ax2.set_xlabel("Zeit [s]")
+        ax2.set_ylabel("Normierte Residuen")
         ax2.xaxis.set_minor_locator(AutoMinorLocator(5))
         ax2.yaxis.set_minor_locator(AutoMinorLocator(5))
+        ax2.tick_params(axis='both', which='both', direction='in', top=True, right=True)
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.9])
 
-    def plot(self):
-        self._plot()
+        print(f"Ergebnis für {title}:")
+        if 'free_tau' in key:
+            hwz = tau * np.log(2)
+            hwz_err = tau_err * np.log(2)
+            print(f"Tau = {tau:.3f} ± {tau_err:.3f} s")
+            print(f"HWZ = {hwz:.3f} ± {hwz_err:.3f} s")
+        else:
+            print(f"Tau (fest) = {tau:.3f} s, HWZ (fest) = {self.fixed_half_life:.3f} s")
+
+        if 'free_tau_free_b' in key:
+            print(f"A = {popt[0]:.3f} ± {perr[0]:.3f}")
+            print(f"b = {popt[2]:.3f} ± {perr[2]:.3f}")
+        elif 'free_tau_b0' in key:
+            print(f"A = {popt[0]:.3f} ± {perr[0]:.3f}")
+        elif 'fixed_tau_free_b' in key:
+            print(f"A = {popt[0]:.3f} ± {perr[0]:.3f}")
+            print(f"b = {popt[1]:.3f} ± {perr[1]:.3f}")
+        elif 'fixed_tau_b0' in key:
+            print(f"A = {popt[0]:.3f} ± {perr[0]:.3f}")
+
+        print(f"Reduziertes Chi² = {red_chi2:.3f}\n")
+
+    def plot(self, i):
+        self._plot(i)
         plt.show()
 
-    def save(self):
-        self._plot()
-        plt.savefig(f"Graphs/Blatt_8_graph", dpi=600)
+    def save(self, i):
+        self._plot(i)
+        plt.savefig(f"Graphs/Blatt_8_graph_{i}", dpi=600)
 
-        # Ausgabe
-        print("\n--- Fit mit freier Halbwertszeit (kein b) ---")
-        popt = self.results_free_hwz['popt']
-        pcov = self.results_free_hwz['pcov']
-        print(f"a = {popt[0]:.2f} ± {np.sqrt(pcov[0, 0]):.2f}")
-        print(f"tau = {popt[1]:.2f} ± {np.sqrt(pcov[1, 1]):.2f}")
-        print(f"Halbwertszeit = {self.results_free_hwz['half_life']:.2f} ± {self.results_free_hwz['half_life_err']:.2f} s")
-        print(f"Reduziertes Chi² = {self.results_free_hwz['chi2_red']:.2f}")
 
-        if self.results_fixed_hwz is not None:
-            print("\n--- Fit mit fester Halbwertszeit (kein b) ---")
-            popt = self.results_fixed_hwz['popt']
-            pcov = self.results_fixed_hwz['pcov']
-            print(f"a = {popt[0]:.2f} ± {np.sqrt(pcov[0, 0]):.2f}")
-            print(f"Feste Halbwertszeit (vorgegeben): {self.fixed_half_life:.2f} s")
-            print(f"Reduziertes Chi² = {self.results_fixed_hwz['chi2_red']:.2f}")
-
-        if self.results_fixed_hwz_with_b is not None:
-            print("\n--- Fit mit fester Halbwertszeit und Verschiebung b ---")
-            popt = self.results_fixed_hwz_with_b['popt']
-            pcov = self.results_fixed_hwz_with_b['pcov']
-            print(f"a = {popt[0]:.2f} ± {np.sqrt(pcov[0, 0]):.2f}")
-            print(f"b = {popt[1]:.2f} ± {np.sqrt(pcov[1, 1]):.2f}")
-            print(f"Feste Halbwertszeit (vorgegeben): {self.fixed_half_life:.2f} s")
-            print(f"Reduziertes Chi² = {self.results_fixed_hwz_with_b['chi2_red']:.2f}")
 
 
 class Data1:
@@ -267,15 +221,30 @@ class Data59:
     394, 366, 297, 313, 267, 230, 245, 192, 184, 186, 139
 ])
 
-        self.y_err = np.array([
-    48.09, 47.02, 44.78, 42.02, 41.42, 38.76, 36.96, 36.33, 33.54, 32.73,
-    31.67, 29.15, 29.03, 27.4, 25.59, 25.71, 23.62, 22.74, 22.58, 20.4,
-    20.35, 19.65, 17.8, 18.25, 16.94, 15.81, 16.28, 14.56, 14.28, 14.35, 12.61
+class Data73:
+    def __init__(self):
+        self.name = ""
+        self.x_data = np.array(
+            [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400,
+             420, 440, 460, 480, 500, 520, 540, 560, 580, 600])
+
+        self.y_data = np.array([
+    1978, 1896, 1717, 1505, 1469, 1280, 1162, 1127, 952, 909,
+    851, 715, 713, 632, 547, 556, 464, 429, 425, 341,
+    341, 317, 255, 272, 231, 198, 213, 165, 159, 162, 119
 ])
 
+        self.y_err = np.array([
+    44.7, 43.77, 41.68, 39.05, 38.59, 36.06, 34.38, 33.87, 31.18, 30.48,
+    29.51, 27.11, 27.07, 25.53, 23.81, 24.0, 22.0, 21.19, 21.1, 19.0,
+    19.0, 18.36, 16.58, 17.09, 15.84, 14.76, 15.26, 13.6, 13.38, 13.49, 11.79
+])
 
-data = Data66()
+if __name__ == '__main__':
+    data = Data66()
 
-fit = ExponentialFit(data.x_data, data.y_data, data.y_err, 153, data.name)
-fit.save()
+    fit = ExponentialFit(data.x_data, data.y_data, data.y_err, 153, data.name)
+    for i in range(4):
+        fit.save(i)
+
 
